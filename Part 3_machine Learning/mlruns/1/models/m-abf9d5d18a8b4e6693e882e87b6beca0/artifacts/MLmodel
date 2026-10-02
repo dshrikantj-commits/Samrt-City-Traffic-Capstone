@@ -1,0 +1,23 @@
+artifact_path: file:C:/Users/Sadanand/OneDrive/NUS AI and ML Course/00 Capstone Project/capstone_projct_shrikant/mlruns/1/models/m-abf9d5d18a8b4e6693e882e87b6beca0/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.1
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.9.0
+    skops_trusted_types: null
+mlflow_version: 3.15.1
+model_id: m-abf9d5d18a8b4e6693e882e87b6beca0
+model_size_bytes: 90906
+model_uuid: m-abf9d5d18a8b4e6693e882e87b6beca0
+prompts: null
+run_id: f3c32d08e60443d9bf9704ea3f032f19
+utc_time_created: '2026-09-27 15:52:40.616670'

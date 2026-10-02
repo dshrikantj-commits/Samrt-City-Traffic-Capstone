@@ -1,0 +1,8 @@
+{
+  "status": "success",
+  "optimal_start_hour": 1,
+  "optimal_end_hour": 4,
+  "average_delay_minutes": 379.29,
+  "estimated_time_saved_minutes": 5920.33,
+  "plain_language_recommendation": "Your optimal travel window for today is between 01:00 AM and 04:00 AM. By choosing this block, you will experience an average delay of only 379 minutes, saving you roughly 5920 minutes compared to peak daily traffic. Conditions are expected to be 'Clear Skies' during this time."
+}

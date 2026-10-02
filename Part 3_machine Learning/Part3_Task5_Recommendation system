@@ -1,0 +1,123 @@
+import pandas as pd
+import numpy as np
+import mlflow.pyfunc
+from datetime import datetime
+
+# ==========================================
+# 1. LOAD MODEL FROM MLFLOW REGISTRY
+# ==========================================
+
+# Set your MLflow Tracking Server URI (Change if your server is remote or on a different port)
+mlflow.set_tracking_uri("http://localhost:5000")
+
+# Define your registered model coordinates
+MODEL_NAME = "Traffic_Volume"
+MODEL_STAGE = "3" 
+
+print(f"🔄 Fetching '{MODEL_NAME}' ({MODEL_STAGE}) from MLflow Registry...")
+
+try:
+    # Load the model directly as a PyFuncModel object
+    model_uri = f"models:/{MODEL_NAME}/{MODEL_STAGE}"
+    traffic_model = mlflow.pyfunc.load_model(model_uri)
+    print("✅ Model loaded successfully from MLflow!")
+except Exception as e:
+    print(f"❌ Failed to load model from MLflow: {e}")
+    print("Please verify your Tracking URI, Model Name, and Stage/Version.")
+    exit()
+
+# ==========================================
+# 2. TRAVEL WINDOW OPTIMIZATION ENGINE
+# ==========================================
+class RouteOptimizer:
+    def __init__(self, mlflow_model):
+        self.model = mlflow_model
+
+    def predict_24h_schedule(self, is_weekend, hourly_weather_forecast):
+        """Generates traffic delay forecasts for all 24 hours of the day."""
+        schedule = []
+        input_data = []
+        
+        # Build the structured payload required by your MLflow signature
+        for hour in range(24):
+            weather = hourly_weather_forecast.get(hour, 0)
+            input_data.append({
+                'hour': hour,
+                'is_weekend': is_weekend,
+                'clouds_all': weather  # Ensure this exact feature name matches your training dataset schema
+            })
+        
+        df_input = pd.DataFrame(input_data)
+        
+        # Pass the dataframe to the MLflow model for batch prediction
+        predicted_delays = self.model.predict(df_input)
+        
+        # Structure the model array outputs back into a clean schedule map
+        for hour in range(24):
+            schedule.append({
+                'hour': hour,
+                'predicted_delay': round(predicted_delays[hour], 1),
+                'weather': hourly_weather_forecast.get(hour, 0)
+            })
+            
+        return pd.DataFrame(schedule)
+
+    def find_best_window(self, schedule_df, window_size_hours=3):
+        """Slides a window across the timeline to capture the lowest delay block."""
+        best_avg_delay = float('inf')
+        best_start_hour = 0
+        
+        for start_hour in range(24 - window_size_hours + 1):
+            window_slice = schedule_df.iloc[start_hour : start_hour + window_size_hours]
+            avg_delay = window_slice['predicted_delay'].mean()
+            
+            if avg_delay < best_avg_delay:
+                best_avg_delay = avg_delay
+                best_start_hour = start_hour
+                
+        return best_start_hour, best_avg_delay
+
+    def generate_recommendation(self, start_hour, avg_delay, schedule_df, window_size=3):
+        """Formats the numbers into an actionable plain-language text template."""
+        end_hour = start_hour + window_size
+        start_time_str = datetime.strptime(f"{start_hour}", "%H").strftime("%I:%M %p")
+        end_time_str = datetime.strptime(f"{end_hour}", "%H").strftime("%I:%M %p")
+        
+        chosen_slice = schedule_df.iloc[start_hour:end_hour]
+        weather_in_window = chosen_slice['weather'].max()
+        peak_day_delay = schedule_df['predicted_delay'].max()
+        time_saved = peak_day_delay - avg_delay
+
+        weather_mapping = {0: "Clear Skies", 1: "Rainy", 2: "Heavy Storms"}
+        
+        recommendation = (
+            f"\n📢 Smart Route Recommendation:\n"
+            f"--------------------------------------------------\n"
+            f"Your optimal travel window for today is between {start_time_str} and {end_time_str}.\n\n"
+            f"Why this works:\n"
+            f"* Expected Average Delay: Only {round(avg_delay)} minutes.\n"
+            f"* Time Saved: Roughly {round(time_saved)} minutes compared to the worst peak hour of the day.\n"
+            f"* Weather Outlook: Conditions are expected to be '{weather_mapping[weather_in_window]}' during this duration."
+        )
+        return recommendation
+
+# ==========================================
+# 3. LIVE SCENARIO SIMULATION RUN
+# ==========================================
+
+# 1. Context details for today's trip execution
+today_is_weekend = 0  # Monday (0 = Weekday)
+
+# 2. Weather profile input (Simulating clear skies with rain moving in from 2:00 PM to 7:00 PM)
+today_weather_forecast = {h: 0 for h in range(24)}
+for hour in range(14, 19):
+    today_weather_forecast[hour] = 1  # 1 = Rainy
+
+# 3. Process recommendations
+optimizer = RouteOptimizer(mlflow_model=traffic_model)
+full_day_forecast = optimizer.predict_24h_schedule(today_is_weekend, today_weather_forecast)
+optimal_hour, calculated_delay = optimizer.find_best_window(full_day_forecast, window_size_hours=3)
+
+# 4. Output plaintext result
+final_text = optimizer.generate_recommendation(optimal_hour, calculated_delay, full_day_forecast)
+print(final_text)

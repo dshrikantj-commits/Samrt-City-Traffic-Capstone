@@ -1,0 +1,24 @@
+artifact_path: file:///C:/Users/Sadanand/OneDrive/NUS AI and ML Course/Samrt City
+  Traffic Capstone/Part 2_Python/mlruns/1/models/m-f48ee4f1e4e542528aa9cfa288ad1622/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.1
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.9.0
+    skops_trusted_types: null
+mlflow_version: 3.15.1
+model_id: m-f48ee4f1e4e542528aa9cfa288ad1622
+model_size_bytes: 219874
+model_uuid: m-f48ee4f1e4e542528aa9cfa288ad1622
+prompts: null
+run_id: afeafbc7429a4d788c58e6a1a115bf9b
+utc_time_created: '2026-10-02 10:44:49.437860'
